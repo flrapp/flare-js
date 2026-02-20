@@ -1,0 +1,30 @@
+{
+  "name": "flare-js",
+  "version": "1.0.0",
+  "description": "JavaScript/TypeScript client libraries for Flare feature flag management",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "turbo build",
+    "dev": "turbo dev",
+    "lint": "turbo lint",
+    "test": "turbo test",
+    "clean": "turbo clean"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/flrapp/flare-js.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/flrapp/flare-js/issues"
+  },
+  "homepage": "https://github.com/flrapp/flare-js#readme",
+  "devDependencies": {
+    "turbo": "^2.8.10",
+    "typescript": "^5.0.0"
+  }
+}
