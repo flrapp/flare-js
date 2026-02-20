@@ -20,8 +20,3 @@ export interface FlagEvaluationResult {
 export interface BulkEvaluationResult {
   flags: FlagEvaluationResult[];
 }
-
-export interface EvaluationContext {
-  scope: string;
-  targetingKey?: string | null;
-}

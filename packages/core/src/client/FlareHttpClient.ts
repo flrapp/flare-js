@@ -1,6 +1,6 @@
 import type { FlareConfig, FlagEvaluationResult, BulkEvaluationResult } from '../types';
 
-export class FlareClient {
+export class FlareHttpClient {
   private readonly config: FlareConfig;
 
   constructor(config: FlareConfig) {
@@ -40,20 +40,27 @@ export class FlareClient {
     }
   }
 
-  async evaluateFlag(flagKey: string, targetingKey?: string): Promise<FlagEvaluationResult> {
+  async evaluateFlag(
+    flagKey: string,
+    scope: string,
+    targetingKey?: string | null,
+  ): Promise<FlagEvaluationResult> {
     return this.post<FlagEvaluationResult>('/sdk/v1/flags/evaluate', {
       flagKey,
       context: {
-        scope: this.config.scope,
+        scope,
         targetingKey: targetingKey ?? null,
       },
     });
   }
 
-  async evaluateAll(targetingKey?: string): Promise<BulkEvaluationResult> {
+  async evaluateAll(
+    scope: string,
+    targetingKey?: string | null,
+  ): Promise<BulkEvaluationResult> {
     return this.post<BulkEvaluationResult>('/sdk/v1/flags/evaluate-all', {
       context: {
-        scope: this.config.scope,
+        scope,
         targetingKey: targetingKey ?? null,
       },
     });

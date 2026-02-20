@@ -17,5 +17,8 @@
     "dev": "tsc --watch",
     "test": "echo \"no tests yet\""
   },
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "@openfeature/core": "^1.9.2"
+  }
 }
