@@ -1,5 +1,5 @@
 {
-  "name": "@flare/react",
+  "name": "@flrapp/react",
   "version": "0.1.0",
   "description": "React SDK for Flare feature flag management",
   "main": "./dist/index.js",
@@ -24,7 +24,7 @@
     "react-dom": ">=18"
   },
   "dependencies": {
-    "@flare/core": "^0.1.0",
+    "@flrapp/core": "*",
     "@openfeature/react-sdk": "^1.2.1",
     "@openfeature/web-sdk": "^1.7.3"
   },

@@ -1,5 +1,5 @@
 {
-  "name": "@flare/core",
+  "name": "@flrapp/core",
   "version": "0.1.0",
   "description": "Core JavaScript client for Flare feature flag management",
   "main": "./dist/index.js",

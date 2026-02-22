@@ -23,6 +23,7 @@
     "url": "https://github.com/flrapp/flare-js/issues"
   },
   "homepage": "https://github.com/flrapp/flare-js#readme",
+  "packageManager": "npm@11.6.2",
   "devDependencies": {
     "turbo": "^2.8.10",
     "typescript": "^5.0.0"

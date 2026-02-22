@@ -1,7 +1,7 @@
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { type Provider, OpenFeature, OpenFeatureProvider } from '@openfeature/react-sdk';
-import { FlareProvider as FlareOpenFeatureProvider } from '@flare/core';
-import type { FlareConfig } from '@flare/core';
+import { FlareProvider as FlareOpenFeatureProvider } from '@flrapp/core';
+import type { FlareConfig } from '@flrapp/core';
 
 interface FlareProviderProps {
   config: FlareConfig;
