@@ -3,6 +3,7 @@ export interface FlareConfig {
   apiKey: string;
   scope: string;
   timeout?: number;
+  pollingIntervalMs?: number;
 }
 
 export interface FlagEvaluationResult {

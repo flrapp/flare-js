@@ -11,6 +11,7 @@ export class FlareHttpClient {
     const { baseUrl, apiKey, timeout } = this.config;
     const url = `${baseUrl}${path}`;
 
+    const authHeader = `Bearer ${apiKey}`
     const controller = new AbortController();
     const timeoutId = timeout
       ? setTimeout(() => controller.abort(), timeout)
@@ -21,7 +22,7 @@ export class FlareHttpClient {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Api-Key': apiKey,
+          'Authorization': authHeader,
         },
         body: JSON.stringify(body),
         signal: controller.signal,

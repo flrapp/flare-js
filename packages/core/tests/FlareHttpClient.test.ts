@@ -82,7 +82,7 @@ describe('FlareHttpClient.evaluateFlag', () => {
     expect(body.context.targetingKey).toBeNull();
   });
 
-  it('sets X-Api-Key header from config', async () => {
+  it('sets Authorization header from config', async () => {
     mockResponse({ flagKey: 'my-flag', value: true });
 
     const client = new FlareHttpClient(config);
@@ -90,7 +90,7 @@ describe('FlareHttpClient.evaluateFlag', () => {
 
     const [, options] = mockFetch.mock.calls[0] as [string, RequestInit];
     const headers = options.headers as Record<string, string>;
-    expect(headers['X-Api-Key']).toBe('test-api-key');
+    expect(headers['Authorization']).toBe('Bearer test-api-key');
   });
 
   it('sets Content-Type: application/json header', async () => {
