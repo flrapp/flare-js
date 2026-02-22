@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { type Provider, OpenFeature, OpenFeatureProvider } from '@openfeature/react-sdk';
 import { FlareProvider as FlareOpenFeatureProvider } from '@flare/core';
 import type { FlareConfig } from '@flare/core';
@@ -11,15 +11,18 @@ interface FlareProviderProps {
 
 export function FlareProvider({ config, children, loadingComponent }: FlareProviderProps) {
   const [ready, setReady] = useState(false);
+  const providerRef = useRef<FlareOpenFeatureProvider | null>(null);
+
+  if (!providerRef.current) {
+    providerRef.current = new FlareOpenFeatureProvider(config);
+  }
 
   useEffect(() => {
     setReady(false);
-    // FlareOpenFeatureProvider implements the server-side CommonProvider interface.
-    // Cast to Provider for compatibility with the web SDK at the call site.
-    OpenFeature.setProviderAndWait(new FlareOpenFeatureProvider(config) as unknown as Provider).then(() => {
+    OpenFeature.setProviderAndWait(providerRef.current as unknown as Provider).then(() => {
       setReady(true);
     });
-  }, [config]);
+  }, []);
 
   if (!ready) {
     return loadingComponent ?? null;

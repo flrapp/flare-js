@@ -1,15 +1,16 @@
 import {
   type CommonProvider,
   type EvaluationContext,
+  type JsonValue,
   type ProviderMetadata,
   type ResolutionDetails,
-  ServerProviderStatus,
+  ClientProviderStatus,
   StandardResolutionReasons,
 } from '@openfeature/core';
 import { FlareHttpClient } from '../client/FlareHttpClient';
 import type { FlagEvaluationResult, FlareConfig } from '../types';
 
-export class FlareProvider implements CommonProvider<ServerProviderStatus> {
+export class FlareProvider implements CommonProvider<ClientProviderStatus> {
   readonly metadata: ProviderMetadata = { name: 'flare-provider' };
   private readonly client: FlareHttpClient;
   private readonly config: FlareConfig;
@@ -65,11 +66,11 @@ export class FlareProvider implements CommonProvider<ServerProviderStatus> {
     this.cache.clear();
   }
 
-  async resolveBooleanEvaluation(
+  resolveBooleanEvaluation(
     flagKey: string,
     defaultValue: boolean,
     _context: EvaluationContext,
-  ): Promise<ResolutionDetails<boolean>> {
+  ): ResolutionDetails<boolean> {
     const cached = this.cache.get(flagKey);
     if (!cached) {
       return { value: defaultValue, reason: StandardResolutionReasons.DEFAULT };
@@ -81,30 +82,30 @@ export class FlareProvider implements CommonProvider<ServerProviderStatus> {
     };
   }
 
-  async resolveStringEvaluation(
+  resolveStringEvaluation(
     flagKey: string,
     defaultValue: string,
     context: EvaluationContext,
-  ): Promise<ResolutionDetails<string>> {
-    const result = await this.resolveBooleanEvaluation(flagKey, defaultValue === 'true', context);
+  ): ResolutionDetails<string> {
+    const result = this.resolveBooleanEvaluation(flagKey, defaultValue === 'true', context);
     return { ...result, value: result.value.toString() };
   }
 
-  async resolveNumberEvaluation(
+  resolveNumberEvaluation(
     flagKey: string,
     defaultValue: number,
     context: EvaluationContext,
-  ): Promise<ResolutionDetails<number>> {
-    const result = await this.resolveBooleanEvaluation(flagKey, defaultValue !== 0, context);
+  ): ResolutionDetails<number> {
+    const result = this.resolveBooleanEvaluation(flagKey, defaultValue !== 0, context);
     return { ...result, value: result.value ? 1 : 0 };
   }
 
-  async resolveObjectEvaluation<T extends object>(
+  resolveObjectEvaluation<T extends JsonValue>(
     flagKey: string,
     defaultValue: T,
     context: EvaluationContext,
-  ): Promise<ResolutionDetails<T>> {
-    const result = await this.resolveBooleanEvaluation(flagKey, Boolean(defaultValue), context);
+  ): ResolutionDetails<T> {
+    const result = this.resolveBooleanEvaluation(flagKey, Boolean(defaultValue), context);
     return { ...result, value: { value: result.value } as unknown as T };
   }
 }

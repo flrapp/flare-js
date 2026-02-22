@@ -25,7 +25,8 @@
   },
   "dependencies": {
     "@flare/core": "^0.1.0",
-    "@openfeature/react-sdk": "^1.2.1"
+    "@openfeature/react-sdk": "^1.2.1",
+    "@openfeature/web-sdk": "^1.7.3"
   },
   "license": "MIT",
   "devDependencies": {
