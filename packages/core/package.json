@@ -1,13 +1,35 @@
 {
-  "name": "core",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "name": "@flrapp/core",
+  "version": "0.1.0",
+  "description": "Core JavaScript client for Flare feature flag management",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs"
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@openfeature/core": "^1.9.2"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "^4.0.18",
+    "tsup": "^8.5.1",
+    "vitest": "^4.0.18"
+  }
 }
