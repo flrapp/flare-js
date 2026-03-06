@@ -23,7 +23,7 @@ jobs:
 
   publish:
     needs: gate
-    uses: flrapp/.github/workflows/npm-publish.yml@main
+    uses: flrapp/.github/.github/workflows/npm-publish.yml@main
     with:
       package-name: '@flrapp/core'
       workspace: packages/core
