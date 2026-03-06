@@ -1,0 +1,32 @@
+name: Release @flrapp/react
+
+on:
+  push:
+    tags:
+      - 'release/flrapp-react/*.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Package version (x.y.z)'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    environment: npm-publish
+    steps:
+      - run: echo "Approved"
+
+  publish:
+    needs: gate
+    uses: flrapp/.github/workflows/npm-publish.yml@main
+    with:
+      package-name: '@flrapp/react'
+      workspace: packages/react
+      version: ${{ inputs.version }}
+    secrets:
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
