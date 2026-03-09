@@ -23,9 +23,18 @@ export class FlareProvider implements CommonProvider<ClientProviderStatus> {
   }
 
   private async refreshCache(context?: EvaluationContext): Promise<void> {
+    const { targetingKey, ...rest } = context ?? {};
+
+    const attributes = Object.keys(rest).length > 0
+      ? Object.fromEntries(
+          Object.entries(rest).filter(([_, val]) => typeof val === 'string')
+        ) as Record<string, string>
+      : null;
+
     const result = await this.client.evaluateAll(
       this.config.scope,
-      context?.targetingKey ?? null,
+      targetingKey ?? null,
+      attributes,
     );
     this.cache.clear();
     for (const flag of result.flags) {

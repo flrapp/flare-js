@@ -45,12 +45,14 @@ export class FlareHttpClient {
     flagKey: string,
     scope: string,
     targetingKey?: string | null,
+    attributes?: Record<string, string> | null,
   ): Promise<FlagEvaluationResult> {
     return this.post<FlagEvaluationResult>('/sdk/v1/flags/evaluate', {
       flagKey,
       context: {
         scope,
         targetingKey: targetingKey ?? null,
+        attributes: attributes ?? null,
       },
     });
   }
@@ -58,11 +60,13 @@ export class FlareHttpClient {
   async evaluateAll(
     scope: string,
     targetingKey?: string | null,
+    attributes?: Record<string, string> | null,
   ): Promise<BulkEvaluationResult> {
     return this.post<BulkEvaluationResult>('/sdk/v1/flags/evaluate-all', {
       context: {
         scope,
         targetingKey: targetingKey ?? null,
+        attributes: attributes ?? null,
       },
     });
   }
