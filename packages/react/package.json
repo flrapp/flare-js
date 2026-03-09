@@ -29,8 +29,7 @@
   },
   "dependencies": {
     "@flrapp/core": "*",
-    "@openfeature/react-sdk": "^1.2.1",
-    "@openfeature/web-sdk": "^1.7.3"
+    "@openfeature/react-sdk": "latest"
   },
   "license": "MIT",
   "devDependencies": {

@@ -6,5 +6,5 @@ export default defineConfig({
   dts: true,
   clean: true,
   sourcemap: true,
-  external: ['react', 'react-dom', '@openfeature/react-sdk', '@flare/core'],
+  external: ['react', 'react-dom', '@openfeature/react-sdk', '@flrapp/core'],
 });

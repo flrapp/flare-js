@@ -10,24 +10,28 @@ npm install @flrapp/react @flrapp/core
 
 ## Setup
 
-Wrap your app with `FlareProvider`:
+Register the provider **before** rendering, then wrap your app with `FlareProvider`:
 
 ```tsx
-import { FlareProvider } from '@flrapp/react';
+// main.tsx
+import { OpenFeature } from '@openfeature/react-sdk';
+import { FlareOpenFeatureProvider, FlareProvider } from '@flrapp/react';
 
-function App() {
-  return (
-    <FlareProvider
-      config={{
-        baseUrl: 'http://localhost:5001',
-        apiKey: 'your-api-key',
-        scope: 'production',
-      }}
-    >
-      {/* your app */}
+const provider = new FlareOpenFeatureProvider({
+  baseUrl: 'http://localhost:5001',
+  apiKey: 'your-api-key',
+  scope: 'production',
+});
+
+OpenFeature.setProvider(provider);
+
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <FlareProvider>
+      <App />
     </FlareProvider>
-  );
-}
+  </StrictMode>
+);
 ```
 
 ## Hooks
@@ -38,9 +42,9 @@ function App() {
 import { useFlag } from '@flrapp/react';
 
 function MyComponent() {
-  const isEnabled = useFlag('my-feature', false);
+  const { value } = useFlag('my-feature', false);
 
-  return <div>{isEnabled ? 'Feature enabled' : 'Feature disabled'}</div>;
+  return <div>{value ? 'Feature enabled' : 'Feature disabled'}</div>;
 }
 ```
 
@@ -57,13 +61,3 @@ function MyComponent() {
   }
 }
 ```
-
-## Props
-
-### `FlareProvider`
-
-| Prop | Type | Required | Description |
-|------|------|----------|-------------|
-| `config` | `FlareConfig` | ✅ | Flare configuration |
-| `children` | `ReactNode` | ✅ | Child components |
-| `loadingComponent` | `ReactNode` | ❌ | Shown while provider initializes |
