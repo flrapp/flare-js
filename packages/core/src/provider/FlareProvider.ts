@@ -8,13 +8,13 @@ import {
   StandardResolutionReasons,
 } from '@openfeature/core';
 import { FlareHttpClient } from '../client/FlareHttpClient';
-import type { FlagEvaluationResult, FlareConfig } from '../types';
+import type { FlareConfig, TypedFlagResponse } from '../types';
 
 export class FlareProvider implements CommonProvider<ClientProviderStatus> {
   readonly metadata: ProviderMetadata = { name: 'flare-provider' };
   private readonly client: FlareHttpClient;
   private readonly config: FlareConfig;
-  private cache: Map<string, FlagEvaluationResult> = new Map();
+  private cache: Map<string, TypedFlagResponse> = new Map();
   private pollingInterval?: ReturnType<typeof setInterval>;
 
   constructor(config: FlareConfig) {
@@ -31,11 +31,9 @@ export class FlareProvider implements CommonProvider<ClientProviderStatus> {
         ) as Record<string, string>
       : null;
 
-    const result = await this.client.evaluateAll(
-      this.config.scope,
-      targetingKey ?? null,
-      attributes,
-    );
+    const result = attributes
+      ? await this.client.evaluateAll(this.config.scope, targetingKey ?? null, attributes)
+      : await this.client.evaluateAll(this.config.scope, targetingKey ?? null);
     this.cache.clear();
     for (const flag of result.flags) {
       this.cache.set(flag.flagKey, flag);
@@ -81,11 +79,10 @@ export class FlareProvider implements CommonProvider<ClientProviderStatus> {
     _context: EvaluationContext,
   ): ResolutionDetails<boolean> {
     const cached = this.cache.get(flagKey);
-    if (!cached) {
-      return { value: defaultValue, reason: StandardResolutionReasons.DEFAULT };
-    }
+    if (!cached) return { value: defaultValue, reason: StandardResolutionReasons.DEFAULT };
+    if (cached.type !== 'boolean') return { value: defaultValue, reason: StandardResolutionReasons.ERROR };
     return {
-      value: cached.value,
+      value: cached.value as boolean,
       reason: StandardResolutionReasons.CACHED,
       variant: cached.variant ?? undefined,
     };
@@ -94,27 +91,45 @@ export class FlareProvider implements CommonProvider<ClientProviderStatus> {
   resolveStringEvaluation(
     flagKey: string,
     defaultValue: string,
-    context: EvaluationContext,
+    _context: EvaluationContext,
   ): ResolutionDetails<string> {
-    const result = this.resolveBooleanEvaluation(flagKey, defaultValue === 'true', context);
-    return { ...result, value: result.value.toString() };
+    const cached = this.cache.get(flagKey);
+    if (!cached) return { value: defaultValue, reason: StandardResolutionReasons.DEFAULT };
+    if (cached.type !== 'string') return { value: defaultValue, reason: StandardResolutionReasons.ERROR };
+    return {
+      value: cached.value as string,
+      reason: StandardResolutionReasons.CACHED,
+      variant: cached.variant ?? undefined,
+    };
   }
 
   resolveNumberEvaluation(
     flagKey: string,
     defaultValue: number,
-    context: EvaluationContext,
+    _context: EvaluationContext,
   ): ResolutionDetails<number> {
-    const result = this.resolveBooleanEvaluation(flagKey, defaultValue !== 0, context);
-    return { ...result, value: result.value ? 1 : 0 };
+    const cached = this.cache.get(flagKey);
+    if (!cached) return { value: defaultValue, reason: StandardResolutionReasons.DEFAULT };
+    if (cached.type !== 'number') return { value: defaultValue, reason: StandardResolutionReasons.ERROR };
+    return {
+      value: cached.value as number,
+      reason: StandardResolutionReasons.CACHED,
+      variant: cached.variant ?? undefined,
+    };
   }
 
   resolveObjectEvaluation<T extends JsonValue>(
     flagKey: string,
     defaultValue: T,
-    context: EvaluationContext,
+    _context: EvaluationContext,
   ): ResolutionDetails<T> {
-    const result = this.resolveBooleanEvaluation(flagKey, Boolean(defaultValue), context);
-    return { ...result, value: { value: result.value } as unknown as T };
+    const cached = this.cache.get(flagKey);
+    if (!cached) return { value: defaultValue, reason: StandardResolutionReasons.DEFAULT };
+    if (cached.type !== 'json') return { value: defaultValue, reason: StandardResolutionReasons.ERROR };
+    return {
+      value: cached.value as T,
+      reason: StandardResolutionReasons.CACHED,
+      variant: cached.variant ?? undefined,
+    };
   }
 }

@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { EvaluationContext } from '@openfeature/core';
 import { StandardResolutionReasons } from '@openfeature/core';
 import { FlareProvider } from '../src/provider/FlareProvider';
-import type { FlareConfig, BulkEvaluationResult } from '../src/types';
+import type { FlareConfig, TypedBulkEvaluationResponse } from '../src/types';
 
 const mockEvaluateFlag = vi.hoisted(() => vi.fn());
 const mockEvaluateAll = vi.hoisted(() => vi.fn());
@@ -23,7 +23,7 @@ const config: FlareConfig = {
 const emptyContext: EvaluationContext = {};
 const contextWithTargeting: EvaluationContext = { targetingKey: 'user-123' };
 
-function makeBulkResult(flags: BulkEvaluationResult['flags'] = []): BulkEvaluationResult {
+function makeBulkResult(flags: TypedBulkEvaluationResponse['flags'] = []): TypedBulkEvaluationResponse {
   return { flags };
 }
 
@@ -62,29 +62,29 @@ describe('FlareProvider.initialize', () => {
   it('populates cache from evaluateAll response', async () => {
     mockEvaluateAll.mockResolvedValue(
       makeBulkResult([
-        { flagKey: 'flag-a', value: true, variant: 'on' },
-        { flagKey: 'flag-b', value: false, variant: 'off' },
+        { flagKey: 'flag-a', type: 'boolean', value: true, variant: 'on', reason: 'STATIC' },
+        { flagKey: 'flag-b', type: 'boolean', value: false, variant: 'off', reason: 'STATIC' },
       ]),
     );
 
     const provider = new FlareProvider(config);
     await provider.initialize(emptyContext);
 
-    const a = await provider.resolveBooleanEvaluation('flag-a', false, emptyContext);
-    const b = await provider.resolveBooleanEvaluation('flag-b', true, emptyContext);
+    const a = provider.resolveBooleanEvaluation('flag-a', false, emptyContext);
+    const b = provider.resolveBooleanEvaluation('flag-b', true, emptyContext);
     expect(a.value).toBe(true);
     expect(b.value).toBe(false);
   });
 
   it('does not call evaluateAll again on resolve after initialization', async () => {
     mockEvaluateAll.mockResolvedValue(
-      makeBulkResult([{ flagKey: 'my-flag', value: true }]),
+      makeBulkResult([{ flagKey: 'my-flag', type: 'boolean', value: true, variant: null, reason: 'STATIC' }]),
     );
 
     const provider = new FlareProvider(config);
     await provider.initialize(emptyContext);
-    await provider.resolveBooleanEvaluation('my-flag', false, emptyContext);
-    await provider.resolveBooleanEvaluation('my-flag', false, emptyContext);
+    provider.resolveBooleanEvaluation('my-flag', false, emptyContext);
+    provider.resolveBooleanEvaluation('my-flag', false, emptyContext);
 
     expect(mockEvaluateAll).toHaveBeenCalledOnce();
     expect(mockEvaluateFlag).not.toHaveBeenCalled();
@@ -127,12 +127,12 @@ describe('FlareProvider.initialize', () => {
 describe('FlareProvider.resolveBooleanEvaluation', () => {
   it('returns cached value with reason CACHED', async () => {
     mockEvaluateAll.mockResolvedValue(
-      makeBulkResult([{ flagKey: 'my-flag', value: true, variant: 'on' }]),
+      makeBulkResult([{ flagKey: 'my-flag', type: 'boolean', value: true, variant: 'on', reason: 'STATIC' }]),
     );
 
     const provider = new FlareProvider(config);
     await provider.initialize(emptyContext);
-    const result = await provider.resolveBooleanEvaluation('my-flag', false, emptyContext);
+    const result = provider.resolveBooleanEvaluation('my-flag', false, emptyContext);
 
     expect(result.value).toBe(true);
     expect(result.variant).toBe('on');
@@ -144,20 +144,33 @@ describe('FlareProvider.resolveBooleanEvaluation', () => {
 
     const provider = new FlareProvider(config);
     await provider.initialize(emptyContext);
-    const result = await provider.resolveBooleanEvaluation('unknown-flag', true, emptyContext);
+    const result = provider.resolveBooleanEvaluation('unknown-flag', true, emptyContext);
 
     expect(result.value).toBe(true);
     expect(result.reason).toBe(StandardResolutionReasons.DEFAULT);
   });
 
-  it('does not call HTTP client on resolve', async () => {
+  it('returns defaultValue with reason ERROR when cached flag type is not boolean', async () => {
     mockEvaluateAll.mockResolvedValue(
-      makeBulkResult([{ flagKey: 'my-flag', value: false }]),
+      makeBulkResult([{ flagKey: 'my-flag', type: 'string', value: 'yes', variant: null, reason: 'STATIC' }]),
     );
 
     const provider = new FlareProvider(config);
     await provider.initialize(emptyContext);
-    await provider.resolveBooleanEvaluation('my-flag', true, emptyContext);
+    const result = provider.resolveBooleanEvaluation('my-flag', false, emptyContext);
+
+    expect(result.value).toBe(false);
+    expect(result.reason).toBe(StandardResolutionReasons.ERROR);
+  });
+
+  it('does not call HTTP client on resolve', async () => {
+    mockEvaluateAll.mockResolvedValue(
+      makeBulkResult([{ flagKey: 'my-flag', type: 'boolean', value: false, variant: null, reason: 'STATIC' }]),
+    );
+
+    const provider = new FlareProvider(config);
+    await provider.initialize(emptyContext);
+    provider.resolveBooleanEvaluation('my-flag', true, emptyContext);
 
     expect(mockEvaluateFlag).not.toHaveBeenCalled();
   });
@@ -167,28 +180,42 @@ describe('FlareProvider.resolveBooleanEvaluation', () => {
 // resolveStringEvaluation
 // ---------------------------------------------------------------------------
 describe('FlareProvider.resolveStringEvaluation', () => {
-  it('returns "true" for cached true flag', async () => {
+  it('returns cached string value with reason CACHED', async () => {
     mockEvaluateAll.mockResolvedValue(
-      makeBulkResult([{ flagKey: 'my-flag', value: true }]),
+      makeBulkResult([{ flagKey: 'my-flag', type: 'string', value: 'blue', variant: 'blue', reason: 'STATIC' }]),
     );
 
     const provider = new FlareProvider(config);
     await provider.initialize(emptyContext);
-    const result = await provider.resolveStringEvaluation('my-flag', 'false', emptyContext);
+    const result = provider.resolveStringEvaluation('my-flag', 'red', emptyContext);
 
-    expect(result.value).toBe('true');
+    expect(result.value).toBe('blue');
+    expect(result.variant).toBe('blue');
+    expect(result.reason).toBe(StandardResolutionReasons.CACHED);
   });
 
-  it('returns "false" for cached false flag', async () => {
+  it('returns defaultValue with reason DEFAULT when flag not in cache', async () => {
+    mockEvaluateAll.mockResolvedValue(makeBulkResult());
+
+    const provider = new FlareProvider(config);
+    await provider.initialize(emptyContext);
+    const result = provider.resolveStringEvaluation('missing', 'fallback', emptyContext);
+
+    expect(result.value).toBe('fallback');
+    expect(result.reason).toBe(StandardResolutionReasons.DEFAULT);
+  });
+
+  it('returns defaultValue with reason ERROR when cached flag type is not string', async () => {
     mockEvaluateAll.mockResolvedValue(
-      makeBulkResult([{ flagKey: 'my-flag', value: false }]),
+      makeBulkResult([{ flagKey: 'my-flag', type: 'boolean', value: true, variant: null, reason: 'STATIC' }]),
     );
 
     const provider = new FlareProvider(config);
     await provider.initialize(emptyContext);
-    const result = await provider.resolveStringEvaluation('my-flag', 'true', emptyContext);
+    const result = provider.resolveStringEvaluation('my-flag', 'fallback', emptyContext);
 
-    expect(result.value).toBe('false');
+    expect(result.value).toBe('fallback');
+    expect(result.reason).toBe(StandardResolutionReasons.ERROR);
   });
 });
 
@@ -196,28 +223,41 @@ describe('FlareProvider.resolveStringEvaluation', () => {
 // resolveNumberEvaluation
 // ---------------------------------------------------------------------------
 describe('FlareProvider.resolveNumberEvaluation', () => {
-  it('returns 1 for cached true flag', async () => {
+  it('returns cached number value with reason CACHED', async () => {
     mockEvaluateAll.mockResolvedValue(
-      makeBulkResult([{ flagKey: 'my-flag', value: true }]),
+      makeBulkResult([{ flagKey: 'my-flag', type: 'number', value: 42, variant: null, reason: 'STATIC' }]),
     );
 
     const provider = new FlareProvider(config);
     await provider.initialize(emptyContext);
-    const result = await provider.resolveNumberEvaluation('my-flag', 0, emptyContext);
+    const result = provider.resolveNumberEvaluation('my-flag', 0, emptyContext);
 
-    expect(result.value).toBe(1);
+    expect(result.value).toBe(42);
+    expect(result.reason).toBe(StandardResolutionReasons.CACHED);
   });
 
-  it('returns 0 for cached false flag', async () => {
+  it('returns defaultValue with reason DEFAULT when flag not in cache', async () => {
+    mockEvaluateAll.mockResolvedValue(makeBulkResult());
+
+    const provider = new FlareProvider(config);
+    await provider.initialize(emptyContext);
+    const result = provider.resolveNumberEvaluation('missing', 99, emptyContext);
+
+    expect(result.value).toBe(99);
+    expect(result.reason).toBe(StandardResolutionReasons.DEFAULT);
+  });
+
+  it('returns defaultValue with reason ERROR when cached flag type is not number', async () => {
     mockEvaluateAll.mockResolvedValue(
-      makeBulkResult([{ flagKey: 'my-flag', value: false }]),
+      makeBulkResult([{ flagKey: 'my-flag', type: 'boolean', value: true, variant: null, reason: 'STATIC' }]),
     );
 
     const provider = new FlareProvider(config);
     await provider.initialize(emptyContext);
-    const result = await provider.resolveNumberEvaluation('my-flag', 1, emptyContext);
+    const result = provider.resolveNumberEvaluation('my-flag', 5, emptyContext);
 
-    expect(result.value).toBe(0);
+    expect(result.value).toBe(5);
+    expect(result.reason).toBe(StandardResolutionReasons.ERROR);
   });
 });
 
@@ -225,28 +265,44 @@ describe('FlareProvider.resolveNumberEvaluation', () => {
 // resolveObjectEvaluation
 // ---------------------------------------------------------------------------
 describe('FlareProvider.resolveObjectEvaluation', () => {
-  it('returns { value: true } for cached true flag', async () => {
+  it('returns cached object value with reason CACHED', async () => {
+    const payload = { threshold: 0.5, enabled: true };
     mockEvaluateAll.mockResolvedValue(
-      makeBulkResult([{ flagKey: 'my-flag', value: true }]),
+      makeBulkResult([{ flagKey: 'my-flag', type: 'json', value: payload, variant: null, reason: 'STATIC' }]),
     );
 
     const provider = new FlareProvider(config);
     await provider.initialize(emptyContext);
-    const result = await provider.resolveObjectEvaluation('my-flag', {}, emptyContext);
+    const result = provider.resolveObjectEvaluation('my-flag', {}, emptyContext);
 
-    expect(result.value).toEqual({ value: true });
+    expect(result.value).toEqual(payload);
+    expect(result.reason).toBe(StandardResolutionReasons.CACHED);
   });
 
-  it('returns { value: false } for cached false flag', async () => {
+  it('returns defaultValue with reason DEFAULT when flag not in cache', async () => {
+    mockEvaluateAll.mockResolvedValue(makeBulkResult());
+
+    const provider = new FlareProvider(config);
+    await provider.initialize(emptyContext);
+    const defaultVal = { x: 1 };
+    const result = provider.resolveObjectEvaluation('missing', defaultVal, emptyContext);
+
+    expect(result.value).toEqual(defaultVal);
+    expect(result.reason).toBe(StandardResolutionReasons.DEFAULT);
+  });
+
+  it('returns defaultValue with reason ERROR when cached flag type is not json', async () => {
     mockEvaluateAll.mockResolvedValue(
-      makeBulkResult([{ flagKey: 'my-flag', value: false }]),
+      makeBulkResult([{ flagKey: 'my-flag', type: 'boolean', value: true, variant: null, reason: 'STATIC' }]),
     );
 
     const provider = new FlareProvider(config);
     await provider.initialize(emptyContext);
-    const result = await provider.resolveObjectEvaluation('my-flag', {}, emptyContext);
+    const defaultVal = { x: 0 };
+    const result = provider.resolveObjectEvaluation('my-flag', defaultVal, emptyContext);
 
-    expect(result.value).toEqual({ value: false });
+    expect(result.value).toEqual(defaultVal);
+    expect(result.reason).toBe(StandardResolutionReasons.ERROR);
   });
 });
 
@@ -269,18 +325,18 @@ describe('FlareProvider.onContextChange', () => {
 
   it('updates cache with flags from new context', async () => {
     mockEvaluateAll
-      .mockResolvedValueOnce(makeBulkResult([{ flagKey: 'my-flag', value: false }]))
-      .mockResolvedValueOnce(makeBulkResult([{ flagKey: 'my-flag', value: true }]));
+      .mockResolvedValueOnce(makeBulkResult([{ flagKey: 'my-flag', type: 'boolean', value: false, variant: null, reason: 'STATIC' }]))
+      .mockResolvedValueOnce(makeBulkResult([{ flagKey: 'my-flag', type: 'boolean', value: true, variant: null, reason: 'TARGETING_MATCH' }]));
 
     const provider = new FlareProvider(config);
     await provider.initialize(emptyContext);
 
-    const before = await provider.resolveBooleanEvaluation('my-flag', true, emptyContext);
+    const before = provider.resolveBooleanEvaluation('my-flag', true, emptyContext);
     expect(before.value).toBe(false);
 
     await provider.onContextChange(emptyContext, contextWithTargeting);
 
-    const after = await provider.resolveBooleanEvaluation('my-flag', false, emptyContext);
+    const after = provider.resolveBooleanEvaluation('my-flag', false, emptyContext);
     expect(after.value).toBe(true);
   });
 
@@ -297,10 +353,8 @@ describe('FlareProvider.onContextChange', () => {
     const newContext: EvaluationContext = { targetingKey: 'user-456' };
     await provider.onContextChange(emptyContext, newContext);
 
-    // onContextChange calls refreshCache once
     expect(mockEvaluateAll).toHaveBeenCalledTimes(2);
 
-    // new polling fires with new context
     await vi.advanceTimersByTimeAsync(5000);
     expect(mockEvaluateAll).toHaveBeenCalledTimes(3);
     expect(mockEvaluateAll).toHaveBeenLastCalledWith('test-scope', 'user-456');
@@ -318,7 +372,6 @@ describe('FlareProvider.onContextChange', () => {
 
     await vi.advanceTimersByTimeAsync(60000);
 
-    // only 2 calls: initialize + onContextChange
     expect(mockEvaluateAll).toHaveBeenCalledTimes(2);
   });
 });
@@ -337,20 +390,19 @@ describe('FlareProvider.onClose', () => {
     await provider.onClose();
 
     await vi.advanceTimersByTimeAsync(30000);
-    // only 1 call from initialize — polling stopped
     expect(mockEvaluateAll).toHaveBeenCalledTimes(1);
   });
 
   it('clears the cache on close', async () => {
     mockEvaluateAll.mockResolvedValue(
-      makeBulkResult([{ flagKey: 'my-flag', value: true }]),
+      makeBulkResult([{ flagKey: 'my-flag', type: 'boolean', value: true, variant: null, reason: 'STATIC' }]),
     );
 
     const provider = new FlareProvider(config);
     await provider.initialize(emptyContext);
     await provider.onClose();
 
-    const result = await provider.resolveBooleanEvaluation('my-flag', false, emptyContext);
+    const result = provider.resolveBooleanEvaluation('my-flag', false, emptyContext);
     expect(result.value).toBe(false);
     expect(result.reason).toBe(StandardResolutionReasons.DEFAULT);
   });

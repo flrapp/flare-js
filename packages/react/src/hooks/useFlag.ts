@@ -1,6 +1,5 @@
-import { useBooleanFlagDetails } from '@openfeature/react-sdk';
-import type { EvaluationDetails } from '@openfeature/react-sdk';
+import { useBooleanFlagValue } from '@openfeature/react-sdk';
 
-export function useFlag(flagKey: string, defaultValue: boolean): EvaluationDetails<boolean> {
-  return useBooleanFlagDetails(flagKey, defaultValue);
+export function useFlag(flagKey: string, defaultValue: boolean): boolean {
+  return useBooleanFlagValue(flagKey, defaultValue);
 }

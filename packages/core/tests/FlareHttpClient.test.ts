@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { FlareHttpClient } from '../src/client/FlareHttpClient';
-import type { FlareConfig, FlagEvaluationResult, BulkEvaluationResult } from '../src/types';
+import type { FlareConfig, FlagEvaluationResult, TypedBulkEvaluationResponse } from '../src/types';
 
 const config: FlareConfig = {
   baseUrl: 'http://localhost:5001',
@@ -169,7 +169,7 @@ describe('FlareHttpClient.evaluateFlag', () => {
 
 describe('FlareHttpClient.evaluateAll', () => {
   it('makes POST to /sdk/v1/flags/evaluate-all', async () => {
-    const result: BulkEvaluationResult = { flags: [] };
+    const result: TypedBulkEvaluationResponse = { flags: [] };
     mockResponse(result);
 
     const client = new FlareHttpClient(config);
@@ -207,11 +207,13 @@ describe('FlareHttpClient.evaluateAll', () => {
     expect(body.context.targetingKey).toBeNull();
   });
 
-  it('returns parsed BulkEvaluationResult on 200', async () => {
-    const result: BulkEvaluationResult = {
+  it('returns typed flags for all serve-value types on 200', async () => {
+    const result: TypedBulkEvaluationResponse = {
       flags: [
-        { flagKey: 'flag-a', value: true, variant: 'on' },
-        { flagKey: 'flag-b', value: false, variant: 'off' },
+        { flagKey: 'flag-bool', type: 'boolean', value: true, variant: 'on', reason: 'STATIC' },
+        { flagKey: 'flag-str', type: 'string', value: 'blue', variant: 'blue', reason: 'TARGETING_MATCH' },
+        { flagKey: 'flag-num', type: 'number', value: 42, variant: null, reason: 'DEFAULT' },
+        { flagKey: 'flag-obj', type: 'json', value: { x: 1 }, variant: null, reason: 'STATIC' },
       ],
     };
     mockResponse(result);
