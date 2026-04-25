@@ -23,8 +23,16 @@ export function useObjectFlag<T>(
     [JSON.stringify(context)],
   );
 
+  // Stabilize object defaultValue to avoid re-triggering the effect on every render
+  // (object identity changes each render even if the contents are the same)
+  const stableDefault = useMemo(
+    () => defaultValue,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [JSON.stringify(defaultValue)],
+  );
+
   const [state, setState] = useState<ObjectFlagState<T>>({
-    value: defaultValue,
+    value: stableDefault,
     reason: 'DEFAULT',
     variant: null,
     isLoading: true,
@@ -34,7 +42,7 @@ export function useObjectFlag<T>(
   useEffect(() => {
     let cancelled = false;
     setState((prev) => ({ ...prev, isLoading: true }));
-    client.getObjectValue<T>(flagKey, defaultValue, stableContext).then((result) => {
+    client.getObjectValue<T>(flagKey, stableDefault, stableContext).then((result) => {
       if (!cancelled) {
         setState({
           value: result.value,
@@ -48,7 +56,7 @@ export function useObjectFlag<T>(
     return () => {
       cancelled = true;
     };
-  }, [client, flagKey, defaultValue, stableContext]);
+  }, [client, flagKey, stableDefault, stableContext]);
 
   return state;
 }

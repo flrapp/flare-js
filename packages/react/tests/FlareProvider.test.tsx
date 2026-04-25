@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { FlareProvider } from '../src/components/FlareProvider';
-import type { FlareConfig } from '@flare/core';
+import type { FlareConfig } from '@flrapp/core';
 
 const mockSetProviderAndWait = vi.hoisted(() => vi.fn());
 const mockOpenFeatureProvider = vi.hoisted(() =>
@@ -15,9 +15,19 @@ vi.mock('@openfeature/react-sdk', () => ({
   OpenFeatureProvider: mockOpenFeatureProvider,
 }));
 
-vi.mock('@flare/core', () => ({
+vi.mock('@flrapp/core', () => ({
   FlareProvider: class MockFlareProvider {
     constructor(public config: FlareConfig) {}
+  },
+  FlareClient: class MockFlareClient {
+    constructor(public config: FlareConfig) {}
+    getBooleanValue = vi.fn();
+    getStringValue = vi.fn();
+    getNumberValue = vi.fn();
+    getObjectValue = vi.fn();
+    evaluateAll = vi.fn();
+    setContext = vi.fn();
+    getContext = vi.fn();
   },
 }));
 

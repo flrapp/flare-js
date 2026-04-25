@@ -1,4 +1,4 @@
-import type { FlareConfig, FlagEvaluationResult, BulkEvaluationResult } from '../types';
+import type { FlareConfig, FlagEvaluationResult, TypedBulkEvaluationResponse } from '../types';
 
 export class FlareHttpClient {
   private readonly config: FlareConfig;
@@ -61,7 +61,7 @@ export class FlareHttpClient {
     scope: string,
     targetingKey?: string | null,
     attributes?: Record<string, string> | null,
-  ): Promise<BulkEvaluationResult> {
+  ): Promise<TypedBulkEvaluationResponse> {
     const context: Record<string, unknown> = {
       scope,
       targetingKey: targetingKey ?? null,
@@ -69,6 +69,6 @@ export class FlareHttpClient {
     if (attributes) {
       context.attributes = attributes;
     }
-    return this.post<BulkEvaluationResult>('/sdk/v1/flags/evaluate-all', { context });
+    return this.post<TypedBulkEvaluationResponse>('/sdk/v1/flags/evaluate-all', { context });
   }
 }
