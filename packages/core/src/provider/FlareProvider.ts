@@ -31,11 +31,9 @@ export class FlareProvider implements CommonProvider<ClientProviderStatus> {
         ) as Record<string, string>
       : null;
 
-    const result = await this.client.evaluateAll(
-      this.config.scope,
-      targetingKey ?? null,
-      attributes,
-    );
+    const result = attributes
+      ? await this.client.evaluateAll(this.config.scope, targetingKey ?? null, attributes)
+      : await this.client.evaluateAll(this.config.scope, targetingKey ?? null);
     this.cache.clear();
     for (const flag of result.flags) {
       this.cache.set(flag.flagKey, flag);

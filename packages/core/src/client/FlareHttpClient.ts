@@ -47,14 +47,14 @@ export class FlareHttpClient {
     targetingKey?: string | null,
     attributes?: Record<string, string> | null,
   ): Promise<FlagEvaluationResult> {
-    return this.post<FlagEvaluationResult>('/sdk/v1/flags/evaluate', {
-      flagKey,
-      context: {
-        scope,
-        targetingKey: targetingKey ?? null,
-        attributes: attributes ?? null,
-      },
-    });
+    const context: Record<string, unknown> = {
+      scope,
+      targetingKey: targetingKey ?? null,
+    };
+    if (attributes) {
+      context.attributes = attributes;
+    }
+    return this.post<FlagEvaluationResult>('/sdk/v1/flags/evaluate', { flagKey, context });
   }
 
   async evaluateAll(
@@ -62,12 +62,13 @@ export class FlareHttpClient {
     targetingKey?: string | null,
     attributes?: Record<string, string> | null,
   ): Promise<BulkEvaluationResult> {
-    return this.post<BulkEvaluationResult>('/sdk/v1/flags/evaluate-all', {
-      context: {
-        scope,
-        targetingKey: targetingKey ?? null,
-        attributes: attributes ?? null,
-      },
-    });
+    const context: Record<string, unknown> = {
+      scope,
+      targetingKey: targetingKey ?? null,
+    };
+    if (attributes) {
+      context.attributes = attributes;
+    }
+    return this.post<BulkEvaluationResult>('/sdk/v1/flags/evaluate-all', { context });
   }
 }
